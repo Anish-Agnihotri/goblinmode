@@ -54,6 +54,17 @@ contract GoblinMode is IERC3156FlashBorrower {
     GOBLIN_TOWN = IERC721(_GOBLIN_TOWN);
     MC_GOBLIN_BURGER = Redeemable(_MC_GOBLIN_BURGER);
     GOBLIN_TOWN_VAULT = NFTXVault(_GOBLIN_TOWN_VAULT);
+
+    // Approve NFTX vault to transfer goblintown nfts
+    GOBLIN_TOWN.setApprovalForAll(
+      address(GOBLIN_TOWN_VAULT),
+      true
+    );
+    // Approve NFTX vault to reclaim vTokens
+    GOBLIN_TOWN_VAULT.approve(
+      address(GOBLIN_TOWN_VAULT),
+      2**256 - 1
+    );
   }
 
   // ============ Functions ============

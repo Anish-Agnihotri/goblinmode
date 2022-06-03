@@ -33,4 +33,8 @@ interface NFTXVault {
     uint256 amount,
     bytes calldata data
   ) external returns (bool);
+  /// @notice Allow spending balance
+  /// @param spender approved address
+  /// @param amount to approve for
+  function approve(address spender, uint256 amount) external;
 }
