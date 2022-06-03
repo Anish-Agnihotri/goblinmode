@@ -11,7 +11,7 @@ import "./interfaces/IERC3156FlashBorrower.sol"; // EIP-3156 Flash Borrower
 /// ============ Custom Interfaces ============
 
 interface Redeemable {
-  function claim() external;
+  function claim(uint256[] memory tokenIds) external;
 }
 
 /// @title GoblinMode
@@ -84,7 +84,8 @@ contract GoblinMode is IERC3156FlashBorrower {
     // Redeem McGoblinBurger NFTs
     GOBLIN_TOWN_VAULT.redeem(tokenIds.length, tokenIds);
 
-    // Add claim here
+    // FIXME: Edit this claim when live:
+    MC_GOBLIN_BURGER.claim(tokenIds);
 
     // Return McGoblinBurger NFTs
     uint256[] memory empty = new uint256[](0);

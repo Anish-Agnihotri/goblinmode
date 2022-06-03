@@ -1,23 +1,55 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../GoblinMode.sol";
-import "forge-std/Test.sol";
+/// ============ Imports ============
 
-contract ContractTest is Test {
-    GoblinMode public arbitrage;
+import "../GoblinMode.sol"; // GoblinMode
+import "../MockBurger.sol"; // Mock claimable NFT
+import "forge-std/Test.sol"; // Tests
 
-    function setUp() public {
-        arbitrage = new GoblinMode(
-            0xbCe3781ae7Ca1a5e050Bd9C4c77369867eBc307e,
-            0xEA23AfF1724fe14c38BE4f4493f456Cac1AFEc0e
-        );
-    }
+/// @title GoblinModeTest
+/// @notice Tests GoblinMode.sol
+contract GoblinModeTest is Test {
+  // ============ Constants ============
 
-    function testExample() public {
-        uint256[] memory tokenIds = new uint256[](1);
-        tokenIds[0] = 9467;
-        arbitrage.execute(tokenIds);
-        assertTrue(true);
-    }
+  address constant NFTX_VAULT = 0xEA23AfF1724fe14c38BE4f4493f456Cac1AFEc0e;
+  address constant GOBLIN_TOWN = 0xbCe3781ae7Ca1a5e050Bd9C4c77369867eBc307e;
+
+  // ============ Storage ============
+
+  /// @dev Claimable NFT contract
+  MockBurger public MOCK_BURGER;
+  /// @dev Flashloan contract
+  GoblinMode public GOBLIN_MODE;
+
+  // ============ Setup tests ============
+
+  function setUp() public {
+    MOCK_BURGER = new MockBurger(GOBLIN_TOWN);
+    GOBLIN_MODE = new GoblinMode(
+      GOBLIN_TOWN,
+      address(MOCK_BURGER),
+      NFTX_VAULT
+    );
+  }
+
+  // ============ Tests ============
+
+  /// @notice Successful flashloan execution
+  function testExecute() public {}
+
+  /// @notice Failing flashloan execution (no NFTX fee balance)
+  function testFailExecuteWithoutFee() public {}
+
+  /// @notice Successful withdraw by owner
+  function testWithdrawTokens() public {}
+
+  /// @notice Failing withdraw by non-owner
+  function testWithdrawTokensNotOwner() public {}
+
+  /// @notice Successful withdraw by owner
+  function testWithdrawNFTs() public {}
+
+  /// @notice Failing withdraw by non-owner
+  function testWithdrawNFTsNotOwner() public {}
 }
