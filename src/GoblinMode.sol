@@ -63,7 +63,7 @@ contract GoblinMode is IERC3156FlashBorrower {
     // Approve NFTX vault to reclaim vTokens
     GOBLIN_TOWN_VAULT.approve(
       address(GOBLIN_TOWN_VAULT),
-      2**256 - 1
+      type(uint256).max
     );
   }
 
