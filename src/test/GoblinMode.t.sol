@@ -18,7 +18,9 @@ contract GoblinModeTest is Test {
   // ============ Constants ============
 
   address constant VM_ADDR = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
+  address constant NOT_OWNER = 0x016C8780e5ccB32E5CAA342a926794cE64d9C364;
   address constant NFTX_VAULT = 0xEA23AfF1724fe14c38BE4f4493f456Cac1AFEc0e;
+  address constant FAKE_ERC721 = 0x2aEa4Add166EBf38b63d09a75dE1a7b94Aa24163;
   address constant GOBLIN_TOWN = 0xbCe3781ae7Ca1a5e050Bd9C4c77369867eBc307e;
 
   // ============ Storage ============
@@ -74,17 +76,105 @@ contract GoblinModeTest is Test {
   }
 
   /// @notice Failing flashloan execution (no NFTX fee balance)
-  /*function testFailExecuteWithoutFee() public {}
+  function testFailExecuteWithoutFee() public {
+    // Execute flashloan without fee (should fail)
+    uint256[] memory tokenIds = new uint256[](3);
+    tokenIds[0] = 5472;
+    tokenIds[1] = 7605;
+    tokenIds[2] = 1090;
+    GOBLIN_MODE.execute(tokenIds);
+  }
 
   /// @notice Successful withdraw by owner
-  function testWithdrawTokens() public {}
+  function testWithdrawTokens() public {
+    // Send 0.18 vTokens to contract
+    VM.prank(0x9ECD4042Ce307A2eaee23061351f2A204279a207); // SushiSwap pool
+    IERC20(NFTX_VAULT).transfer(
+      address(GOBLIN_MODE),
+      18e16 // 0.18
+    );
+    assertEq(
+      IERC20Balance(NFTX_VAULT).balanceOf(address(GOBLIN_MODE)),
+      18e16
+    );
+
+    // Ensure tokens are withdrawable
+    GOBLIN_MODE.ownerWithdrawToken(
+      NFTX_VAULT,
+      18e16
+    );
+    assertEq(
+      IERC20Balance(NFTX_VAULT).balanceOf(address(this)),
+      18e16
+    );
+    assertEq(
+      IERC20Balance(NFTX_VAULT).balanceOf(address(GOBLIN_MODE)),
+      0
+    );
+  }
 
   /// @notice Failing withdraw by non-owner
-  function testWithdrawTokensNotOwner() public {}
+  function testFailWithdrawTokensNotOwner() public {
+    // Send 0.18 vTokens to contract
+    VM.prank(0x9ECD4042Ce307A2eaee23061351f2A204279a207); // SushiSwap pool
+    IERC20(NFTX_VAULT).transfer(
+      address(GOBLIN_MODE),
+      18e16 // 0.18
+    );
+    assertEq(
+      IERC20Balance(NFTX_VAULT).balanceOf(address(GOBLIN_MODE)),
+      18e16
+    );
+
+    // Ensure tokens are not withdrawable
+    VM.prank(NOT_OWNER);
+    GOBLIN_MODE.ownerWithdrawToken(
+      NFTX_VAULT,
+      18e16
+    );
+  }
 
   /// @notice Successful withdraw by owner
-  function testWithdrawNFTs() public {}
+  function testWithdrawNFTs() public {
+    // Setup fake ERC721 token
+    uint256[] memory tokenIds = new uint256[](1);
+    tokenIds[0] = 2183;
+
+    // Transfer dummy ERC721 to contract
+    VM.prank(NOT_OWNER); // ironically, fake ERC721 owner
+    IERC721(FAKE_ERC721).transferFrom(
+      address(NOT_OWNER),
+      address(GOBLIN_MODE),
+      tokenIds[0]
+    );
+
+    // Ensure NFT is withdrawable
+    GOBLIN_MODE.ownerWithdrawNFT(FAKE_ERC721, tokenIds);
+  }
 
   /// @notice Failing withdraw by non-owner
-  function testWithdrawNFTsNotOwner() public {}*/
+  function testFailWithdrawNFTsNotOwner() public {
+    // Setup fake ERC721 token
+    uint256[] memory tokenIds = new uint256[](1);
+    tokenIds[0] = 2183;
+
+    // Transfer dummy ERC721 to contract
+    VM.prank(NOT_OWNER); // ironically, fake ERC721 owner
+    IERC721(FAKE_ERC721).transferFrom(
+      address(NOT_OWNER),
+      address(GOBLIN_MODE),
+      tokenIds[0]
+    );
+
+    // Ensure NFT is not withdrawable
+    VM.prank(NOT_OWNER);
+    GOBLIN_MODE.ownerWithdrawNFT(FAKE_ERC721, tokenIds);
+  }
+
+  /// @notice Accept ERC721 tokens
+  function onERC721Received(address, address, uint256, bytes calldata) 
+    external pure returns (bytes4) {
+    // IERC721.onERC721Received.selector
+    return 0x150b7a02;
+  }
 }
