@@ -39,7 +39,6 @@ contract GoblinModeTest is Test {
     MOCK_BURGER = new MockBurger(GOBLIN_TOWN);
     GOBLIN_MODE = new GoblinMode(
       GOBLIN_TOWN,
-      address(MOCK_BURGER),
       NFTX_VAULT
     );
   }
@@ -64,7 +63,14 @@ contract GoblinModeTest is Test {
     tokenIds[0] = 5472;
     tokenIds[1] = 7605;
     tokenIds[2] = 1090;
-    GOBLIN_MODE.execute(tokenIds);
+    GOBLIN_MODE.execute(
+      tokenIds,
+      address(MOCK_BURGER),
+      abi.encodeWithSelector(
+        bytes4(keccak256(bytes("claim(uint256[])"))),
+        tokenIds
+      )
+    );
 
     // Verify final vToken balance
     assertEq(
@@ -82,7 +88,40 @@ contract GoblinModeTest is Test {
     tokenIds[0] = 5472;
     tokenIds[1] = 7605;
     tokenIds[2] = 1090;
-    GOBLIN_MODE.execute(tokenIds);
+    GOBLIN_MODE.execute(
+      tokenIds,
+      address(MOCK_BURGER),
+      abi.encodeWithSelector(
+        bytes4(keccak256(bytes("claim(uint256[])"))),
+        tokenIds
+      )
+    );
+  }
+
+  /// @notice Failing flashloan execution (non-owner)
+  function testFailExecuteNotOwner() public {
+    // Collect required fee
+    VM.prank(0x9ECD4042Ce307A2eaee23061351f2A204279a207); // SushiSwap pool
+    IERC20(NFTX_VAULT).transfer(
+      address(GOBLIN_MODE),
+      18e16 // 0.18
+    );
+
+    // Execute flashloan
+    uint256[] memory tokenIds = new uint256[](3);
+    tokenIds[0] = 5472;
+    tokenIds[1] = 7605;
+    tokenIds[2] = 1090;
+    // Mock non-owner
+    VM.prank(NOT_OWNER);
+    GOBLIN_MODE.execute(
+      tokenIds,
+      address(MOCK_BURGER),
+      abi.encodeWithSelector(
+        bytes4(keccak256(bytes("claim(uint256[])"))),
+        tokenIds
+      )
+    );
   }
 
   /// @notice Successful withdraw by owner

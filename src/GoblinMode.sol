@@ -10,10 +10,6 @@ import "./interfaces/IERC3156FlashBorrower.sol"; // EIP-3156 Flash Borrower
 
 /// ============ Custom Interfaces ============
 
-interface Redeemable {
-  function claim(uint256[] memory tokenIds) external;
-}
-
 /// @title GoblinMode
 /// @author Anish Agnihotri
 /// @notice Claims McGoblinBurger NFTs via NFTX flashloaning goblintown NFTs
@@ -24,8 +20,6 @@ contract GoblinMode is IERC3156FlashBorrower {
   address internal immutable OWNER;
   /// @dev GoblinTown NFTs
   IERC721 internal immutable GOBLIN_TOWN;
-  /// @dev McGoblinBurger NFTs
-  Redeemable internal immutable MC_GOBLIN_BURGER;
   /// @dev NFTX Vault
   NFTXVault internal immutable GOBLIN_TOWN_VAULT;
 
@@ -41,18 +35,12 @@ contract GoblinMode is IERC3156FlashBorrower {
 
   /// @notice Creates a new GoblinMode contract
   /// @param _GOBLIN_TOWN contract
-  /// @param _MC_GOBLIN_BURGER contract
   /// @param _GOBLIN_TOWN_VAULT nftx vault
-  constructor(
-    address _GOBLIN_TOWN, 
-    address _MC_GOBLIN_BURGER,
-    address _GOBLIN_TOWN_VAULT
-  ) {
+  constructor(address _GOBLIN_TOWN, address _GOBLIN_TOWN_VAULT) {
     OWNER = msg.sender; // Setup owner
 
     // Setup NFT + Vault contracts
     GOBLIN_TOWN = IERC721(_GOBLIN_TOWN);
-    MC_GOBLIN_BURGER = Redeemable(_MC_GOBLIN_BURGER);
     GOBLIN_TOWN_VAULT = NFTXVault(_GOBLIN_TOWN_VAULT);
 
     // Approve NFTX vault to transfer goblintown nfts
@@ -71,12 +59,18 @@ contract GoblinMode is IERC3156FlashBorrower {
 
   /// @notice Executes strategy
   /// @param tokenIds to flashloan from NFTX Vault
-  function execute(uint256[] memory tokenIds) external {
+  /// @param mcGoblinBurger address to derivative NFT
+  /// @param claimData to execute at derivative NFT address
+  function execute(
+    uint256[] memory tokenIds, 
+    address mcGoblinBurger,
+    bytes memory claimData
+  ) external onlyOwner {
     GOBLIN_TOWN_VAULT.flashLoan(
       IERC3156FlashBorrower(address(this)), // Receiver = this contract
       address(GOBLIN_TOWN_VAULT), // Token to flash loan (goblintown vToken)
       tokenIds.length * 1e18, // 1 token per NFT
-      abi.encode(tokenIds) // Pass tokenIds
+      abi.encode(tokenIds, mcGoblinBurger, claimData)
     );
   }
 
@@ -89,14 +83,22 @@ contract GoblinMode is IERC3156FlashBorrower {
     uint256,
     bytes calldata data
   ) external returns (bytes32) {
-    // Decode calldata to get tokenIds
-    (uint256[] memory tokenIds) = abi.decode(data, (uint256[]));
+    // Enforce callback caller is NFTX pool
+    require(msg.sender == address(GOBLIN_TOWN_VAULT), "UNAUTHORIZED");
+
+    // Decode calldata to get tokenIds, derivative address, function data
+    (
+      uint256[] memory tokenIds,
+      address mcGoblinBurger,
+      bytes memory claimData
+    ) = abi.decode(data, (uint256[], address, bytes));
 
     // Redeem McGoblinBurger NFTs
     GOBLIN_TOWN_VAULT.redeem(tokenIds.length, tokenIds);
 
-    // FIXME: Edit this claim when live:
-    MC_GOBLIN_BURGER.claim(tokenIds);
+    // Claim NFTs by calling derivative contract with arbitrary data
+    (bool success, ) = mcGoblinBurger.call(claimData);
+    require(success, "UNSUCCESSFUL");
 
     // Return McGoblinBurger NFTs
     uint256[] memory empty = new uint256[](0);
