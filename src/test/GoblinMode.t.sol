@@ -58,18 +58,28 @@ contract GoblinModeTest is Test {
       18e16
     );
 
+    // Update approvals
+    GOBLIN_MODE.setMaxApprovals();
+
     // Execute flashloan
+    // Setup tokens
     uint256[] memory tokenIds = new uint256[](3);
-    tokenIds[0] = 5472;
-    tokenIds[1] = 7605;
-    tokenIds[2] = 1090;
+    tokenIds[0] = 2578;
+    tokenIds[1] = 9031;
+    tokenIds[2] = 4070;
+    // Generate calldata
+    bytes[] memory data = new bytes[](3);
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      // Encode claim into data
+      data[i] = abi.encodeWithSelector(
+        bytes4(keccak256(bytes("claim(uint256)"))),
+        tokenIds[i]
+      );
+    }
     GOBLIN_MODE.execute(
       tokenIds,
       address(MOCK_BURGER),
-      abi.encodeWithSelector(
-        bytes4(keccak256(bytes("claim(uint256[])"))),
-        tokenIds
-      )
+      data
     );
 
     // Verify final vToken balance
@@ -83,23 +93,36 @@ contract GoblinModeTest is Test {
 
   /// @notice Failing flashloan execution (no NFTX fee balance)
   function testFailExecuteWithoutFee() public {
-    // Execute flashloan without fee (should fail)
+    // Update approvals
+    GOBLIN_MODE.setMaxApprovals();
+
+    // Execute flashloan (without fee, should fail)
+    // Setup tokens
     uint256[] memory tokenIds = new uint256[](3);
-    tokenIds[0] = 5472;
-    tokenIds[1] = 7605;
-    tokenIds[2] = 1090;
+    tokenIds[0] = 2578;
+    tokenIds[1] = 9031;
+    tokenIds[2] = 4070;
+    // Generate calldata
+    bytes[] memory data = new bytes[](3);
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      // Encode claim into data
+      data[i] = abi.encodeWithSelector(
+        bytes4(keccak256(bytes("claim(uint256)"))),
+        tokenIds[i]
+      );
+    }
     GOBLIN_MODE.execute(
       tokenIds,
       address(MOCK_BURGER),
-      abi.encodeWithSelector(
-        bytes4(keccak256(bytes("claim(uint256[])"))),
-        tokenIds
-      )
+      data
     );
   }
 
   /// @notice Failing flashloan execution (non-owner)
   function testFailExecuteNotOwner() public {
+    // Update approvals
+    GOBLIN_MODE.setMaxApprovals();
+
     // Collect required fee
     VM.prank(0x9ECD4042Ce307A2eaee23061351f2A204279a207); // SushiSwap pool
     IERC20(NFTX_VAULT).transfer(
@@ -108,19 +131,26 @@ contract GoblinModeTest is Test {
     );
 
     // Execute flashloan
+    // Setup tokens
     uint256[] memory tokenIds = new uint256[](3);
-    tokenIds[0] = 5472;
-    tokenIds[1] = 7605;
-    tokenIds[2] = 1090;
+    tokenIds[0] = 2578;
+    tokenIds[1] = 9031;
+    tokenIds[2] = 4070;
+    // Generate calldata
+    bytes[] memory data = new bytes[](3);
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      // Encode claim into data
+      data[i] = abi.encodeWithSelector(
+        bytes4(keccak256(bytes("claim(uint256)"))),
+        tokenIds[i]
+      );
+    }
     // Mock non-owner
     VM.prank(NOT_OWNER);
     GOBLIN_MODE.execute(
       tokenIds,
       address(MOCK_BURGER),
-      abi.encodeWithSelector(
-        bytes4(keccak256(bytes("claim(uint256[])"))),
-        tokenIds
-      )
+      data
     );
   }
 

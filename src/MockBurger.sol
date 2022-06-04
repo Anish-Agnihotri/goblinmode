@@ -33,14 +33,12 @@ contract MockBurger is ERC721("MockBurger", "MB") {
   // ============ Functions ============
 
   /// @notice Arbitrary claim function
-  /// @param tokenIds to claim
-  function claim(uint256[] memory tokenIds) external {
-    for (uint256 i = 0; i < tokenIds.length; i++) {
-      // Require ownership of gobbler
-      require(GOBLIN_TOWN.ownerOf(tokenIds[i]) == msg.sender, "oNlY foR GOblEn");
-      // Mint new Mockburger NFT
-      _mint(msg.sender, tokenIds[i]);
-    }
+  /// @param tokenId to claim
+  function claim(uint256 tokenId) external {
+    // Require ownership of gobbler
+    require(GOBLIN_TOWN.ownerOf(tokenId) == msg.sender, "oNlY foR GOblEn");
+    // Mint new Mockburger NFT
+    _mint(msg.sender, tokenId);
   }
 
   /// @notice Implement mock tokenURI

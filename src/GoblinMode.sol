@@ -42,7 +42,12 @@ contract GoblinMode is IERC3156FlashBorrower {
     // Setup NFT + Vault contracts
     GOBLIN_TOWN = IERC721(_GOBLIN_TOWN);
     GOBLIN_TOWN_VAULT = NFTXVault(_GOBLIN_TOWN_VAULT);
+  }
 
+  // ============ Functions ============
+
+  /// @notice Sets max approval for NFTX vault to withdraw vTokens + NFTs
+  function setMaxApprovals() external {
     // Approve NFTX vault to transfer goblintown nfts
     GOBLIN_TOWN.setApprovalForAll(
       address(GOBLIN_TOWN_VAULT),
@@ -55,16 +60,14 @@ contract GoblinMode is IERC3156FlashBorrower {
     );
   }
 
-  // ============ Functions ============
-
   /// @notice Executes strategy
   /// @param tokenIds to flashloan from NFTX Vault
   /// @param mcGoblinBurger address to derivative NFT
-  /// @param claimData to execute at derivative NFT address
+  /// @param claimData to execute at derivative NFT address, per NFT
   function execute(
     uint256[] memory tokenIds, 
     address mcGoblinBurger,
-    bytes memory claimData
+    bytes[] memory claimData
   ) external onlyOwner {
     GOBLIN_TOWN_VAULT.flashLoan(
       IERC3156FlashBorrower(address(this)), // Receiver = this contract
@@ -90,15 +93,21 @@ contract GoblinMode is IERC3156FlashBorrower {
     (
       uint256[] memory tokenIds,
       address mcGoblinBurger,
-      bytes memory claimData
-    ) = abi.decode(data, (uint256[], address, bytes));
+      bytes[] memory claimData
+    ) = abi.decode(data, (uint256[], address, bytes[]));
 
     // Redeem McGoblinBurger NFTs
-    GOBLIN_TOWN_VAULT.redeem(tokenIds.length, tokenIds);
+    uint256 length = tokenIds.length;
+    GOBLIN_TOWN_VAULT.redeem(length, tokenIds);
 
-    // Claim NFTs by calling derivative contract with arbitrary data
-    (bool success, ) = mcGoblinBurger.call(claimData);
-    require(success, "UNSUCCESSFUL");
+    // For each tokenId
+    for (uint256 i = 0; i < length;) {
+      // Call claim with arbitrary data
+      (bool success, ) = mcGoblinBurger.call(claimData[i]);
+      require(success, "UNSUCCESSFUL");
+
+      unchecked { ++i; }
+    }
 
     // Return McGoblinBurger NFTs
     uint256[] memory empty = new uint256[](0);
