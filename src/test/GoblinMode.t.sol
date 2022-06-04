@@ -12,12 +12,20 @@ interface IERC20Balance {
   function balanceOf(address) external returns (uint256);
 }
 
+interface IMCGOBLIN {
+  /// @notice Collect contract owner
+  function owner() external returns (address);
+  /// @notice Enable redemptions
+  function trnfryerOn(bool) external;
+}
+
 /// @title GoblinModeTest
 /// @notice Tests GoblinMode.sol
 contract GoblinModeTest is Test {
   // ============ Constants ============
 
   address constant VM_ADDR = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
+  address constant MCGOBLIN = 0xc5B52253f5225835cc81C52cdb3d6A22bc3B0c93;
   address constant NOT_OWNER = 0x016C8780e5ccB32E5CAA342a926794cE64d9C364;
   address constant NFTX_VAULT = 0xEA23AfF1724fe14c38BE4f4493f456Cac1AFEc0e;
   address constant FAKE_ERC721 = 0x2aEa4Add166EBf38b63d09a75dE1a7b94Aa24163;
@@ -89,6 +97,57 @@ contract GoblinModeTest is Test {
     );
     // Verify final MockBurger nft balance
     assertEq(MOCK_BURGER.balanceOf(address(GOBLIN_MODE)), 3);
+  }
+
+  /// @notice Test flashloan execution against live contract
+  function testExecuteLive() public {
+    // Send 0.18 vTokens to contract
+    VM.prank(0x9ECD4042Ce307A2eaee23061351f2A204279a207); // SushiSwap pool
+    IERC20(NFTX_VAULT).transfer(
+      address(GOBLIN_MODE),
+      18e16 // 0.18
+    );
+    assertEq(
+      IERC20Balance(NFTX_VAULT).balanceOf(address(GOBLIN_MODE)),
+      18e16
+    );
+
+    // Update approvals
+    GOBLIN_MODE.setMaxApprovals();
+
+    // Enable contract
+    VM.prank(IMCGOBLIN(MCGOBLIN).owner());
+    IMCGOBLIN(MCGOBLIN).trnfryerOn(true);
+
+    // Execute flashloan
+    // Setup tokens
+    uint256[] memory tokenIds = new uint256[](3);
+    tokenIds[0] = 2578;
+    tokenIds[1] = 9031;
+    tokenIds[2] = 4070;
+    // Generate calldata
+    bytes[] memory data = new bytes[](3);
+    for (uint256 i = 0; i < tokenIds.length; i++) {
+      // Encode claim into data
+      data[i] = abi.encodeWithSelector(
+        bytes4(keccak256(bytes("esemblSNAK(uint256,uint256,uint256,uint256,uint256,uint256,uint256)"))),
+        tokenIds[i],1,2,3,1,2,3
+      );
+    }
+    GOBLIN_MODE.execute(
+      tokenIds,
+      MCGOBLIN,
+      data
+    );
+
+    // Verify final vToken balance
+    assertEq(
+      IERC20Balance(NFTX_VAULT).balanceOf(address(GOBLIN_MODE)),
+      0
+    );
+    // Verify final MockBurger nft balance
+    // (using IERC20Balance, but same for IERC721)
+    assertEq(IERC20Balance(MCGOBLIN).balanceOf(address(GOBLIN_MODE)), 3);
   }
 
   /// @notice Failing flashloan execution (no NFTX fee balance)
